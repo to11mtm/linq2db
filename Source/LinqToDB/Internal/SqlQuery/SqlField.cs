@@ -47,7 +47,9 @@ namespace LinqToDB.Internal.SqlQuery
 			Type             = field.Type;
 			Alias            = field.Alias;
 			Name             = field.Name;
+#pragma warning disable CS8601 // Possible null reference assignment.
 			PhysicalName     = field.PhysicalName;
+#pragma warning restore CS8601 // Possible null reference assignment.
 			CanBeNull        = field.CanBeNull;
 			IsPrimaryKey     = field.IsPrimaryKey;
 			PrimaryKeyOrder  = field.PrimaryKeyOrder;

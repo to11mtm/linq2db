@@ -35,7 +35,9 @@ namespace LinqToDB.Internal.Common
 			}
 #endif
 
+#pragma warning disable CS0162 // Unreachable code detected
 			throw new PlatformNotSupportedException();
+#pragma warning restore CS0162 // Unreachable code detected
 		}
 
 		public static dynamic Wrap(object instance)

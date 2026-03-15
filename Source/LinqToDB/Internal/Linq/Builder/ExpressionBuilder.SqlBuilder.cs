@@ -1384,7 +1384,9 @@ namespace LinqToDB.Internal.Linq.Builder
 											{
 												// Validating that interface property is pointing to the correct class property
 
+#pragma warning disable CS8604 // Possible null reference argument.
 												var interfaceMap               = assignment.MemberInfo.ReflectedType.GetInterfaceMapEx(member.ReflectedType);
+#pragma warning restore CS8604 // Possible null reference argument.
 												var interfacePropertyGetMethod = propInfo.GetGetMethod();
 												var classPropertyGetMethod     = classPropInfo.GetGetMethod();
 

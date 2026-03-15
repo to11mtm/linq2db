@@ -316,6 +316,7 @@ namespace LinqToDB.Internal.Linq.Builder
 				typeof(DateTimeOffset),
 				typeof(TimeSpan),
 				typeof(Guid),
+				// ReSharper disable once BuiltInTypeReferenceStyle
 				typeof(Decimal),
 				typeof(Uri),
 				typeof(Version),

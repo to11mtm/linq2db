@@ -1740,7 +1740,9 @@ namespace LinqToDB.Mapping
 					var dt = GetDataType(valueType);
 
 					if (dt.Type.DataType == DataType.NVarChar && minLen == length)
+#pragma warning disable CS8629 // Nullable value type may be null.
 						return new SqlDataType(DataType.NChar, valueType, length.Value);
+#pragma warning restore CS8629 // Nullable value type may be null.
 
 					if (length.HasValue && dt.IsCharDataType)
 						return new SqlDataType(dt.Type.DataType, valueType, length.Value);

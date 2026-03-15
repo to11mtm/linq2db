@@ -239,7 +239,9 @@ namespace LinqToDB.Internal.SqlQuery
 				NotNullableExpr2 = notNullableExpr2;
 			}
 
+#pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 			public new Operator       Operator         { get; }
+#pragma warning restore CS0109 // Member does not hide an inherited member; new keyword is not required
 			public     ISqlExpression Expr2            { get; internal set; }
 			public     bool           NotNullableExpr1 { get; }
 			public     bool           NotNullableExpr2 { get; }

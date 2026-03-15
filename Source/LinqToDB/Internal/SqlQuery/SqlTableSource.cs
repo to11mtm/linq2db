@@ -10,7 +10,9 @@ namespace LinqToDB.Internal.SqlQuery
 	{
 #if DEBUG
 #pragma warning disable CA1823 // Avoid unused private fields
+#pragma warning disable IDE0052
 		readonly int id = System.Threading.Interlocked.Increment(ref SelectQuery.SourceIDCounter);
+#pragma warning restore IDE0052
 #pragma warning restore CA1823 // Avoid unused private fields
 #endif
 
