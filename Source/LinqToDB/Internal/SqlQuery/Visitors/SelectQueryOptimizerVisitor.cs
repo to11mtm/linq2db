@@ -491,6 +491,184 @@ namespace LinqToDB.Internal.SqlQuery.Visitors
 			return isModified;
 		}
 
+		/// <summary>
+		/// Collapses a constant-only UNION ALL chain into a single <see cref="SqlValuesTable"/>.
+		/// <para>
+		/// When every query in a <c>SELECT … UNION ALL SELECT …</c> chain has no tables and only
+		/// constant expressions (values, parameters, casts, pure functions), the entire chain is
+		/// replaced by a single <c>SELECT … FROM (VALUES …)</c> (or the per-provider fallback).
+		/// </para>
+		/// <para>
+		/// CopilotNotes: This runs <b>after</b> <see cref="OptimizeUnions"/> so that nested
+		/// union wrappers have already been flattened. The existing
+		/// <see cref="SqlValuesTable"/> rendering in <c>BasicSqlBuilder</c> handles both
+		/// <c>VALUES</c> syntax and <c>SELECT…UNION ALL</c> fallback — no builder changes needed! UwU ✨
+		/// </para>
+		/// </summary>
+		bool OptimizeConstantUnionsToValuesTable(SelectQuery selectQuery)
+		{
+			// --- Guard checks ---
+
+			// Must have set operators (UNION ALL chain)
+			if (!selectQuery.HasSetOperators)
+				return false;
+
+			// Respect AsSubQuery hint
+			if (selectQuery.DoNotRemove)
+				return false;
+
+			// Must have no complex clauses
+			if (selectQuery.HasWhere || selectQuery.HasGroupBy || selectQuery.HasOrderBy || selectQuery.Select.HasModifier)
+				return false;
+
+			// Nothing to convert
+			if (selectQuery.Select.Columns.Count == 0)
+				return false;
+
+			// CopilotNotes: We support TWO shapes here 🌸:
+			//   Shape A — table-less: the query has no FROM tables (fresh constant-only union)
+			//   Shape B — ValuesTable: FROM contains a single SqlValuesTable from a prior optimization pass
+			//             (happens with chained .Concat() calls, e.g. q1.Concat(q2).Concat(q3))
+			SqlValuesTable? existingValuesTable = null;
+			var isTableLess = selectQuery.HasNoTables;
+
+			if (!isTableLess)
+			{
+				// Check for Shape B: single SqlValuesTable in FROM, columns reference its fields
+				if (selectQuery.From.Tables is [{ HasJoins: false, Source: SqlValuesTable vt }])
+				{
+					existingValuesTable = vt;
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			var columnCount = selectQuery.Select.Columns.Count;
+
+			// All set operators must be UNION ALL, constant-only, table-less, and have matching column counts
+			foreach (var setOperator in selectQuery.SetOperators)
+			{
+				if (setOperator.Operation != SetOperation.UnionAll)
+					return false;
+
+				var sq = setOperator.SelectQuery;
+
+				if (sq.DoNotRemove)
+					return false;
+
+				if (!sq.HasNoTables)
+					return false;
+
+				if (sq.HasWhere || sq.HasGroupBy || sq.HasOrderBy || sq.Select.HasModifier)
+					return false;
+
+				if (sq.Select.Columns.Count != columnCount)
+					return false;
+			}
+
+			// For Shape A: verify all main-query column expressions are constant
+			if (isTableLess)
+			{
+				for (var i = 0; i < columnCount; i++)
+				{
+					if (!QueryHelper.IsConstant(selectQuery.Select.Columns[i].Expression))
+						return false;
+				}
+			}
+			else
+			{
+				// Shape B: main columns reference SqlField from existing ValuesTable — already validated
+				// Just verify the fields belong to our ValuesTable
+				if (existingValuesTable!.Fields.Count != columnCount)
+					return false;
+			}
+
+			// Verify all set operator column expressions are constant
+			foreach (var setOperator in selectQuery.SetOperators)
+			{
+				for (var i = 0; i < columnCount; i++)
+				{
+					if (!QueryHelper.IsConstant(setOperator.SelectQuery.Select.Columns[i].Expression))
+						return false;
+				}
+			}
+
+			if (existingValuesTable != null)
+			{
+				// --- Shape B: extend existing ValuesTable with new rows ---
+
+				foreach (var setOperator in selectQuery.SetOperators)
+				{
+					var row = new List<ISqlExpression>(columnCount);
+					for (var i = 0; i < columnCount; i++)
+						row.Add(setOperator.SelectQuery.Select.Columns[i].Expression);
+					existingValuesTable.Rows!.Add(row);
+				}
+
+				// Clear set operators — all rows are now in the ValuesTable
+				selectQuery.SetOperators.Clear();
+			}
+			else
+			{
+				// --- Shape A: build a fresh SqlValuesTable ---
+
+				var nullabilityContext = NullabilityContext.GetContext(selectQuery);
+
+				// Build fields from the main query's columns
+				var fields = new SqlField[columnCount];
+				for (var i = 0; i < columnCount; i++)
+				{
+					var column    = selectQuery.Select.Columns[i];
+					var alias     = column.Alias ?? string.Concat("c", (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
+					var dbType    = QueryHelper.GetDbDataType(column.Expression, _mappingSchema);
+					var canBeNull = column.Expression.CanBeNullable(nullabilityContext);
+
+					fields[i] = new SqlField(dbType, alias, canBeNull);
+				}
+
+				// Collect rows: first row from main query, subsequent rows from set operators
+				var totalRows = 1 + selectQuery.SetOperators.Count;
+				var rows      = new List<List<ISqlExpression>>(totalRows);
+
+				// First row — main query
+				var firstRow = new List<ISqlExpression>(columnCount);
+				for (var i = 0; i < columnCount; i++)
+					firstRow.Add(selectQuery.Select.Columns[i].Expression);
+				rows.Add(firstRow);
+
+				// Subsequent rows — set operator queries
+				foreach (var setOperator in selectQuery.SetOperators)
+				{
+					var row = new List<ISqlExpression>(columnCount);
+					for (var i = 0; i < columnCount; i++)
+						row.Add(setOperator.SelectQuery.Select.Columns[i].Expression);
+					rows.Add(row);
+				}
+
+				// Create the values table (uses the "remote context" constructor)
+				var valuesTable = new SqlValuesTable(fields, rows);
+
+				// --- Rewire the SelectQuery ---
+
+				// Clear set operators
+				selectQuery.SetOperators.Clear();
+
+				// Clear FROM tables and add the new values table source
+				selectQuery.From.Tables.Clear();
+				selectQuery.From.Tables.Add(new SqlTableSource(valuesTable, null));
+
+				// Replace each column expression with the corresponding SqlField
+				for (var i = 0; i < columnCount; i++)
+				{
+					selectQuery.Select.Columns[i].Expression = fields[i];
+				}
+			}
+
+			return true;
+		}
+
 		static void UpdateSetIndexes(Dictionary<ISqlExpression, int> newIndexes, SelectQuery setQuery, SetOperation setOperation)
 		{
 			if (setOperation == SetOperation.UnionAll)
@@ -573,6 +751,10 @@ namespace LinqToDB.Internal.SqlQuery.Visitors
 				isModified = true;
 
 			if (OptimizeUnions(selectQuery))
+				isModified = true;
+
+			// Collapse constant UNION ALL chains into SqlValuesTable
+			if (OptimizeConstantUnionsToValuesTable(selectQuery))
 				isModified = true;
 
 			if (OptimizeDistinct(selectQuery))
