@@ -79,6 +79,17 @@ namespace LinqToDB.Internal.SqlQuery
 
 		internal List<Func<object, ISqlExpression>>? ValueBuilders { get; set; }
 
+		/// <summary>
+		/// When not null, indicates which fields should be parameterized in the VALUES clause.
+		/// If empty (Count == 0), ALL fields are parameterized.
+		/// </summary>
+		/// <remarks>
+		/// null  → classic inline behavior (SqlValue)
+		/// empty → parameterize everything (SqlParameter)
+		/// has items → parameterize only the listed field names
+		/// </remarks>
+		internal HashSet<string>? ParameterizedFieldNames { get; set; }
+
 		internal void AddFieldWithValueBuilder(SqlField field, Func<object, ISqlExpression> valueBuilder)
 		{
 			if (field.Table != null) throw new InvalidOperationException("Invalid parent table.");

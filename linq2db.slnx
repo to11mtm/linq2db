@@ -42,6 +42,7 @@
     <File Path="README.md" />
     <File Path="SQLite.Runtime.props" />
     <File Path="Test.cmd" />
+    <File Path="UserDataProviders.json" />
   </Folder>
   <Folder Name="/Build/">
     <File Path="Build/linq2db.snk" />
