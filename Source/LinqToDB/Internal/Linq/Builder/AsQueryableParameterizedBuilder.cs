@@ -8,27 +8,14 @@ using LinqToDB.Internal.Reflection;
 
 namespace LinqToDB.Internal.Linq.Builder
 {
-	/// <summary>
-	/// Builder for the <see cref="LinqExtensions.AsQueryableParameterized{TElement}(IEnumerable{TElement}, IDataContext)"/>
-	/// and <see cref="LinqExtensions.AsQueryableParameterized{TElement}(IEnumerable{TElement}, IDataContext, Expression{Func{TElement, object}})"/>
-	/// extension methods.
-	/// </summary>
-	/// <remarks>
-	/// CopilotNotes: This builder intercepts AsParameterized calls, extracts the optional fields selector,
-	/// and creates an <see cref="EnumerableContext"/> with parameterization metadata wired into the
-	/// <see cref="LinqToDB.Internal.SqlQuery.SqlValuesTable"/>. When the VALUES clause is later built,
-	/// the value getters will emit <see cref="LinqToDB.Internal.SqlQuery.SqlParameter"/> instead of
-	/// <see cref="LinqToDB.Internal.SqlQuery.SqlValue"/> for the selected fields.
-	/// </remarks>
 	[BuildsMethodCall(nameof(LinqExtensions.AsQueryableParameterized))]
-	sealed class AsParameterizedBuilder : MethodCallBuilder
+	sealed class AsQueryableParameterizedBuilder : MethodCallBuilder
 	{
 		public static bool CanBuildMethod(MethodCallExpression call)
 			=> call.IsSameGenericMethod(Methods.LinqToDB.AsParameterized, Methods.LinqToDB.AsParameterizedFields);
 
 		protected override BuildSequenceResult BuildMethodCall(ExpressionBuilder builder, MethodCallExpression methodCall, BuildInfo buildInfo)
 		{
-			// Both overloads have: source (arg0), dataContext (arg1), optional fieldsSelector (arg2)
 			var sourceExpression = methodCall.Arguments[0];
 
 			var collectionType = typeof(IEnumerable<>).GetGenericType(sourceExpression.Type);
@@ -37,15 +24,12 @@ namespace LinqToDB.Internal.Linq.Builder
 
 			var elementType = collectionType.GetGenericArguments()[0];
 
-			// Extract parameterized field names from the optional selector expression
 			HashSet<string>? parameterizedFieldNames;
 
 			if (methodCall.Arguments.Count > 2)
 			{
-				// Selective parameterization: AsParameterized(source, dc, x => new { x.Id, x.Name })
 				var selectorArg = methodCall.Arguments[2];
 
-				// Unwrap the Quote wrapper around the lambda expression
 				if (selectorArg is UnaryExpression { NodeType: ExpressionType.Quote } quote)
 					selectorArg = quote.Operand;
 
@@ -86,15 +70,6 @@ namespace LinqToDB.Internal.Linq.Builder
 			return BuildSequenceResult.FromContext(enumerableContext);
 		}
 
-		/// <summary>
-		/// Extracts member (property) names from a selector expression body.
-		/// Supports <c>x => new { x.Prop1, x.Prop2 }</c> (NewExpression) and
-		/// <c>x => x.Prop1</c> (single MemberExpression). UwU 🎀
-		/// </summary>
-		/// <remarks>
-		/// CopilotNotes: Returns null if the expression shape is not recognized — we don't want
-		/// to silently ignore a malformed selector.
-		/// </remarks>
 		static HashSet<string>? ExtractFieldNames(Expression body)
 		{
 			var result = new HashSet<string>(StringComparer.Ordinal);

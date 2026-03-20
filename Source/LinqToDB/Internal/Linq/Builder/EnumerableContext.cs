@@ -31,16 +31,6 @@ namespace LinqToDB.Internal.Linq.Builder
 			SelectQuery.From.Table(Table);
 		}
 
-		/// <summary>
-		/// Creates an EnumerableContext with parameterization metadata.
-		/// When <paramref name="parameterizedFieldNames"/> is not null, the generated VALUES clause will emit
-		/// <see cref="SqlParameter"/> instead of <see cref="SqlValue"/> for the specified fields (or all fields
-		/// if the set is empty). UwU ✨
-		/// </summary>
-		/// <remarks>
-		/// CopilotNotes: This constructor is used by AsParameterizedBuilder to wire up the parameterization
-		/// metadata into the SqlValuesTable, which is then checked by BuildGetter.
-		/// </remarks>
 		public EnumerableContext(TranslationModifier translationModifier, ExpressionBuilder builder, ISqlExpression source, SelectQuery query, Type elementType, HashSet<string>? parameterizedFieldNames)
 			: base(translationModifier, builder, elementType, query)
 		{
@@ -188,11 +178,6 @@ namespace LinqToDB.Internal.Linq.Builder
 			var descriptor = column ?? typeDescriptor;
 			var isSpecial  = SequenceHelper.IsSpecialProperty(me, me.Type, "item");
 
-			// CopilotNotes: Check whether this field should be parameterized uwu~
-			// Parameterization is determined by the SqlValuesTable.ParameterizedFieldNames metadata:
-			//   null → classic inline behavior
-			//   empty set → parameterize all fields
-			//   non-empty set → parameterize only listed field names
 			var shouldParameterize = ShouldParameterizeField(me);
 
 			if (isSpecial)
