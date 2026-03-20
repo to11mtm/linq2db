@@ -9,18 +9,18 @@ using LinqToDB.Internal.Reflection;
 namespace LinqToDB.Internal.Linq.Builder
 {
 	/// <summary>
-	/// Builder for the <see cref="LinqExtensions.AsParameterized{TElement}(IEnumerable{TElement}, IDataContext)"/>
-	/// and <see cref="LinqExtensions.AsParameterized{TElement}(IEnumerable{TElement}, IDataContext, Expression{Func{TElement, object}})"/>
-	/// extension methods. UwU 🌸
+	/// Builder for the <see cref="LinqExtensions.AsQueryableParameterized{TElement}(IEnumerable{TElement}, IDataContext)"/>
+	/// and <see cref="LinqExtensions.AsQueryableParameterized{TElement}(IEnumerable{TElement}, IDataContext, Expression{Func{TElement, object}})"/>
+	/// extension methods.
 	/// </summary>
 	/// <remarks>
 	/// CopilotNotes: This builder intercepts AsParameterized calls, extracts the optional fields selector,
 	/// and creates an <see cref="EnumerableContext"/> with parameterization metadata wired into the
 	/// <see cref="LinqToDB.Internal.SqlQuery.SqlValuesTable"/>. When the VALUES clause is later built,
 	/// the value getters will emit <see cref="LinqToDB.Internal.SqlQuery.SqlParameter"/> instead of
-	/// <see cref="LinqToDB.Internal.SqlQuery.SqlValue"/> for the selected fields — kawaii! ✨
+	/// <see cref="LinqToDB.Internal.SqlQuery.SqlValue"/> for the selected fields.
 	/// </remarks>
-	[BuildsMethodCall(nameof(LinqExtensions.AsParameterized))]
+	[BuildsMethodCall(nameof(LinqExtensions.AsQueryableParameterized))]
 	sealed class AsParameterizedBuilder : MethodCallBuilder
 	{
 		public static bool CanBuildMethod(MethodCallExpression call)
