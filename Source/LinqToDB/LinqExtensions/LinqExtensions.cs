@@ -1122,6 +1122,100 @@ namespace LinqToDB
 
 		#endregion
 
+		#region AsParameterized
+
+		/// <summary>
+		/// Converts a generic <see cref="IEnumerable{T}" /> to a Linq To DB query where all mapped column
+		/// values are emitted as SQL parameters instead of inline literals. UwU 💖
+		/// <para>
+		/// This is useful for query plan reuse and avoiding SQL injection when using in-memory
+		/// collections in queries (e.g., VALUES clauses or IN predicates).
+		/// </para>
+		/// <example>
+		/// <code>
+		/// var items = new[] { new { Id = 1, Name = "A" }, new { Id = 2, Name = "B" } };
+		/// var query = items.AsParameterized(db)
+		///     .Where(x => db.Table.Select(t => t.Id).Contains(x.Id));
+		/// // Generated SQL uses @p1, @p2, ... instead of inline 1, 2, 'A', 'B'
+		/// </code>
+		/// </example>
+		/// </summary>
+		/// <typeparam name="TElement">The type of the elements of <paramref name="source" />.</typeparam>
+		/// <param name="source">A sequence to convert.</param>
+		/// <param name="dataContext">Database connection context.</param>
+		/// <returns>An <see cref="IQueryable{T}" /> with parameterized values.</returns>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="source" /> or <paramref name="dataContext" /> is <see langword="null" />.</exception>
+		public static IQueryable<TElement> AsParameterized<TElement>(
+			this IEnumerable<TElement> source,
+			IDataContext dataContext)
+		{
+			ArgumentNullException.ThrowIfNull(source);
+			ArgumentNullException.ThrowIfNull(dataContext);
+
+			if (source is IQueryable<TElement> already)
+				return (IQueryable<TElement>)(ProcessSourceQueryable?.Invoke(already) ?? already);
+
+			var query = new ExpressionQueryImpl<TElement>(dataContext,
+				Expression.Call(
+					null,
+					MethodHelper.GetMethodInfo(AsParameterized, source, dataContext),
+					Expression.Constant(source),
+					SqlQueryRootExpression.Create(dataContext)
+				));
+
+			return query;
+		}
+
+		/// <summary>
+		/// Converts a generic <see cref="IEnumerable{T}" /> to a Linq To DB query where only the
+		/// specified fields are emitted as SQL parameters. Other fields remain as inline literals. UwU ✨
+		/// <para>
+		/// Use this overload when you want fine-grained control over which properties are parameterized —
+		/// for example, to parameterize only frequently-changing fields while keeping stable fields as literals.
+		/// </para>
+		/// <example>
+		/// <code>
+		/// var items = new[] { new Item { Id = 1, Name = "A" }, new Item { Id = 2, Name = "B" } };
+		/// // Only the "Id" column values will become SQL parameters:
+		/// var query = items.AsParameterized(db, x => new { x.Id })
+		///     .Where(x => db.Table.Select(t => t.Id).Contains(x.Id));
+		/// </code>
+		/// </example>
+		/// </summary>
+		/// <typeparam name="TElement">The type of the elements of <paramref name="source" />.</typeparam>
+		/// <param name="source">A sequence to convert.</param>
+		/// <param name="dataContext">Database connection context.</param>
+		/// <param name="fieldsSelector">
+		/// A lambda selecting which properties of <typeparamref name="TElement"/> should be parameterized.
+		/// Return an anonymous object with the desired properties: <c>x => new { x.Prop1, x.Prop2 }</c>.
+		/// </param>
+		/// <returns>An <see cref="IQueryable{T}" /> with selectively parameterized values.</returns>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="source" />, <paramref name="dataContext" />, or <paramref name="fieldsSelector" /> is <see langword="null" />.</exception>
+		public static IQueryable<TElement> AsParameterized<TElement>(
+			this IEnumerable<TElement> source,
+			IDataContext dataContext,
+			Expression<Func<TElement, object>> fieldsSelector)
+		{
+			ArgumentNullException.ThrowIfNull(source);
+			ArgumentNullException.ThrowIfNull(dataContext);
+			ArgumentNullException.ThrowIfNull(fieldsSelector);
+
+			var query = new ExpressionQueryImpl<TElement>(dataContext,
+				Expression.Call(
+					null,
+					MethodHelper.GetMethodInfo(AsParameterized, source, dataContext, fieldsSelector),
+					Expression.Constant(source),
+					SqlQueryRootExpression.Create(dataContext),
+					Expression.Quote(fieldsSelector)
+				));
+
+			return query;
+		}
+
+		#endregion
+
 		#region AsSubQuery
 
 		/// <summary>
