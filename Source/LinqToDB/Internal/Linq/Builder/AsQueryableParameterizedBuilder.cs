@@ -42,8 +42,7 @@ namespace LinqToDB.Internal.Linq.Builder
 			}
 			else
 			{
-				// All-fields parameterization: AsParameterized(source, dc)
-				// Empty HashSet means "parameterize ALL fields"
+				// Empty HashSet means all fields
 				parameterizedFieldNames = new HashSet<string>(StringComparer.Ordinal);
 			}
 

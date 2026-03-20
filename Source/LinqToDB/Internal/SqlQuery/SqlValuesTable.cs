@@ -81,8 +81,7 @@ namespace LinqToDB.Internal.SqlQuery
 
 		/// <summary>
 		/// When not null, indicates which fields should be parameterized in the VALUES clause.
-		/// If empty (Count == 0), ALL fields are parameterized. Otherwise, only listed field names are parameterized.
-		/// When null, no parameterization is applied (default / legacy behavior — inline <see cref="SqlValue"/>).
+		/// If empty (Count == 0), ALL fields are parameterized.
 		/// </summary>
 		/// <remarks>
 		/// null  → classic inline behavior (SqlValue)
