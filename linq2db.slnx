@@ -29,7 +29,6 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path=".runsettings" />
-    <File Path="asqueryable-parameterization-reqs-and-plan.md" />
     <File Path="Build.cmd" />
     <File Path="Clean.cmd" />
     <File Path="Compile.cmd" />
@@ -494,5 +493,4 @@
     </Project>
     <Project Path="Tests/VisualBasic/Tests.VisualBasic.vbproj" />
   </Folder>
-  <Project Path="FeatureTests/FeatureTests.csproj" />
 </Solution>
