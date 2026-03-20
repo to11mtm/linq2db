@@ -250,7 +250,6 @@ namespace LinqToDB.Internal.Linq.Builder
 				}
 				else if (shouldParameterize)
 				{
-					// 🌸 Emit SqlParameter instead of SqlValue for parameterized fields
 					accessor = accessor.EnsureType<object>();
 
 					var paramExpr = Expression.New(
@@ -275,21 +274,15 @@ namespace LinqToDB.Internal.Linq.Builder
 			}
 		}
 
-		/// <summary>
-		/// Checks whether the given member expression's field should be parameterized
-		/// based on <see cref="SqlValuesTable.ParameterizedFieldNames"/> metadata. UwU ✨
-		/// </summary>
 		bool ShouldParameterizeField(MemberExpression memberExpression)
 		{
 			var parameterizedFields = Table.ParameterizedFieldNames;
 			if (parameterizedFields == null)
 				return false;
 
-			// Empty set means parameterize ALL fields
 			if (parameterizedFields.Count == 0)
 				return true;
 
-			// Check if this member's name is in the parameterized set
 			return parameterizedFields.Contains(memberExpression.Member.Name);
 		}
 
