@@ -85,7 +85,6 @@ namespace LinqToDB.Internal.SqlQuery
 		/// When null, no parameterization is applied (default / legacy behavior — inline <see cref="SqlValue"/>).
 		/// </summary>
 		/// <remarks>
-		/// CopilotNotes: This is the key metadata flag for the AsParameterized feature uwu~
 		/// null  → classic inline behavior (SqlValue)
 		/// empty → parameterize everything (SqlParameter)
 		/// has items → parameterize only the listed field names

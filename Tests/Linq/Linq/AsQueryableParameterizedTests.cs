@@ -10,16 +10,8 @@ using Shouldly;
 
 namespace Tests.Linq
 {
-	/// <summary>
-	/// Tests for the <see cref="LinqExtensions.AsParameterized{TElement}(IEnumerable{TElement}, IDataContext)"/>
-	/// extension methods. UwU 🌸
-	/// </summary>
-	/// <remarks>
-	/// CopilotNotes: These tests verify that the AsParameterized API correctly emits SqlParameter
-	/// instances instead of SqlValue literals for VALUES clause rows.
-	/// </remarks>
 	[TestFixture]
-	public class AsParameterizedTests : TestBase
+	public class AsQueryableParameterizedTests : TestBase
 	{
 		[Table]
 		sealed class ParameterizedItem
@@ -29,12 +21,12 @@ namespace Tests.Linq
 			[Column] public string? Name  { get; set; }
 		}
 
-		#region AsParameterized — All Fields
+		#region AsQueryableParameterized — All Fields
 
-		[Test(Description = "AsParameterized with all fields should produce SQL parameters in VALUES clause uwu~")]
+		[Test(Description = "AsQueryableParameterized with all fields should produce SQL parameters in VALUES clause uwu~")]
 		public void AllFields_Contains([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
-			// 🌸 Arrange: create a small in-memory collection and use AsParameterized
+			// 🌸 Arrange: create a small in-memory collection and use AsQueryableParameterized
 			var items = new[]
 			{
 				new ParameterizedItem { Id = 1, Value = 10, Name = "Alpha" },
@@ -49,20 +41,18 @@ namespace Tests.Linq
 				new() { Id = 3, Value = 30, Name = "Gamma" },
 			]);
 
-			// 🎀 Act: query using parameterized collection in a Contains-like join
 			var query =
 				from t in table
-				where items.AsParameterized(db).Select(x => x.Id).Contains(t.Id)
+				where items.AsQueryableParameterized(db).Select(x => x.Id).Contains(t.Id)
 				select t;
 
 			var result = query.ToList();
 
-			// ✨ Assert: we should get back only items with matching Ids
 			result.Count.ShouldBe(2);
 			result.Select(r => r.Id).ShouldBe(new[] { 1, 2 }, ignoreOrder: true);
 		}
 
-		[Test(Description = "AsParameterized with all fields in a join scenario")]
+		[Test(Description = "AsQueryableParameterized with all fields in a join scenario")]
 		public void AllFields_Join([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
 			var items = new[]
@@ -79,10 +69,9 @@ namespace Tests.Linq
 				new() { Id = 3, Value = 30, Name = "Gamma" },
 			]);
 
-			// 🎀 Act: join table with parameterized collection
 			var query =
 				from t in table
-				join p in items.AsParameterized(db) on t.Id equals p.Id
+				join p in items.AsQueryableParameterized(db) on t.Id equals p.Id
 				select new { t.Id, TableName = t.Name, ParamName = p.Name, p.Value };
 
 			var result = query.ToList();
@@ -92,7 +81,7 @@ namespace Tests.Linq
 			result.ShouldContain(r => r.Id == 2 && r.TableName == "Beta"  && r.ParamName == "Two" && r.Value == 200);
 		}
 
-		[Test(Description = "AsParameterized with empty collection should return no results")]
+		[Test(Description = "AsQueryableParameterized with empty collection should return no results")]
 		public void AllFields_EmptyCollection([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
 			var items = System.Array.Empty<ParameterizedItem>();
@@ -105,7 +94,7 @@ namespace Tests.Linq
 
 			var query =
 				from t in table
-				where items.AsParameterized(db).Select(x => x.Id).Contains(t.Id)
+				where items.AsQueryableParameterized(db).Select(x => x.Id).Contains(t.Id)
 				select t;
 
 			var result = query.ToList();
@@ -115,9 +104,9 @@ namespace Tests.Linq
 
 		#endregion
 
-		#region AsParameterized — Selective Fields
+		#region AsQueryableParameterized — Selective Fields
 
-		[Test(Description = "AsParameterized with selective fields — only chosen properties become parameters")]
+		[Test(Description = "AsQueryableParameterized with selective fields — only chosen properties become parameters")]
 		public void SelectiveFields_Contains([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
 			var items = new[]
@@ -137,7 +126,7 @@ namespace Tests.Linq
 			// 🎀 Only parameterize the "Id" field
 			var query =
 				from t in table
-				where items.AsParameterized(db, x => new { x.Id }).Select(x => x.Id).Contains(t.Id)
+				where items.AsQueryableParameterized(db, x => new { x.Id }).Select(x => x.Id).Contains(t.Id)
 				select t;
 
 			var result = query.ToList();
@@ -146,7 +135,7 @@ namespace Tests.Linq
 			result.Select(r => r.Id).ShouldBe(new[] { 1, 2 }, ignoreOrder: true);
 		}
 
-		[Test(Description = "AsParameterized with single field selector (not anonymous type)")]
+		[Test(Description = "AsQueryableParameterized with single field selector (not anonymous type)")]
 		public void SelectiveFields_SingleMember([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
 			var items = new[]
@@ -163,10 +152,9 @@ namespace Tests.Linq
 				new() { Id = 3, Value = 30, Name = "Gamma" },
 			]);
 
-			// 🌸 Single member selector — still parameterizes just that one field
 			var query =
 				from t in table
-				where items.AsParameterized(db, x => (object)x.Id).Select(x => x.Id).Contains(t.Id)
+				where items.AsQueryableParameterized(db, x => (object)x.Id).Select(x => x.Id).Contains(t.Id)
 				select t;
 
 			var result = query.ToList();
@@ -177,9 +165,9 @@ namespace Tests.Linq
 
 		#endregion
 
-		#region AsParameterized — Scalar Collection
+		#region AsQueryableParameterized — Scalar Collection
 
-		[Test(Description = "AsParameterized with a scalar int collection — all values become parameters")]
+		[Test(Description = "AsQueryableParameterized with a scalar int collection — all values become parameters")]
 		public void ScalarCollection_Contains([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
 			var ids = new[] { 1, 2 };
@@ -194,7 +182,7 @@ namespace Tests.Linq
 
 			var query =
 				from t in table
-				where ids.AsParameterized(db).Contains(t.Id)
+				where ids.AsQueryableParameterized(db).Contains(t.Id)
 				select t;
 
 			var result = query.ToList();
@@ -205,9 +193,9 @@ namespace Tests.Linq
 
 		#endregion
 
-		#region AsParameterized — Multiple Fields Join
+		#region AsQueryableParameterized — Multiple Fields Join
 
-		[Test(Description = "AsParameterized with multiple field join to verify multi-column parameterization")]
+		[Test(Description = "AsQueryableParameterized with multiple field join to verify multi-column parameterization")]
 		public void MultipleFields_Join([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
 			var items = new[]
@@ -224,10 +212,9 @@ namespace Tests.Linq
 				new() { Id = 3, Value = 30, Name = "Gamma" },
 			]);
 
-			// 🎀 Parameterize Id and Value, join on both columns
 			var query =
 				from t in table
-				join p in items.AsParameterized(db, x => new { x.Id, x.Value })
+				join p in items.AsQueryableParameterized(db, x => new { x.Id, x.Value })
 					on new { t.Id, t.Value } equals new { p.Id, p.Value }
 				select t;
 
