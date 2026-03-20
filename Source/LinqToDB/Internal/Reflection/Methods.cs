@@ -202,8 +202,8 @@ namespace LinqToDB.Internal.Reflection
 			public static readonly MethodInfo Select              = MemberHelper.MethodOfGeneric<IDataContext>(dc => dc.Select(() => 1));
 
 			public static readonly MethodInfo AsQueryable         = MemberHelper.MethodOfGeneric<IQueryable<object>>(q => q.AsQueryable(null!));
-			public static readonly MethodInfo AsParameterized     = MemberHelper.MethodOfGeneric<IEnumerable<object>>(q => q.AsParameterized(null!));
-			public static readonly MethodInfo AsParameterizedFields = MemberHelper.MethodOfGeneric<IEnumerable<object>>(q => q.AsParameterized(null!, (Expression<Func<object, object>>)null!));
+			public static readonly MethodInfo AsParameterized     = MemberHelper.MethodOfGeneric<IEnumerable<object>>(q => q.AsQueryableParameterized(null!));
+			public static readonly MethodInfo AsParameterizedFields = MemberHelper.MethodOfGeneric<IEnumerable<object>>(q => q.AsQueryableParameterized(null!, (Expression<Func<object, object>>)null!));
 			public static readonly MethodInfo AsSubQuery          = MemberHelper.MethodOfGeneric<IQueryable<object>>(q => q.AsSubQuery());
 
 			public static readonly MethodInfo TagQuery            = MemberHelper.MethodOfGeneric<IQueryable<object>>(q => q.TagQuery(string.Empty));

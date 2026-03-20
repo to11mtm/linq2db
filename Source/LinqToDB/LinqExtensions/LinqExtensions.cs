@@ -1082,11 +1082,7 @@ namespace LinqToDB
 
 		/// <summary>
 		/// Converts a generic <see cref="IEnumerable{T}" /> to a Linq To DB query where all mapped column
-		/// values are emitted as SQL parameters instead of inline literals. UwU 💖
-		/// <para>
-		/// This is useful for query plan reuse and avoiding SQL injection when using in-memory
-		/// collections in queries (e.g., VALUES clauses or IN predicates).
-		/// </para>
+		/// values are emitted as SQL parameters instead of inline literals.
 		/// <example>
 		/// <code>
 		/// var items = new[] { new { Id = 1, Name = "A" }, new { Id = 2, Name = "B" } };
@@ -1101,8 +1097,9 @@ namespace LinqToDB
 		/// <param name="dataContext">Database connection context.</param>
 		/// <returns>An <see cref="IQueryable{T}" /> with parameterized values.</returns>
 		/// <exception cref="ArgumentNullException">
-		/// <paramref name="source" /> or <paramref name="dataContext" /> is <see langword="null" />.</exception>
-		public static IQueryable<TElement> AsParameterized<TElement>(
+		/// <paramref name="source" /> or <paramref name="dataContext" /> is <see langword="null" />.
+		/// </exception>
+		public static IQueryable<TElement> AsQueryableParameterized<TElement>(
 			this IEnumerable<TElement> source,
 			IDataContext dataContext)
 		{
@@ -1115,7 +1112,7 @@ namespace LinqToDB
 			var query = new ExpressionQueryImpl<TElement>(dataContext,
 				Expression.Call(
 					null,
-					MethodHelper.GetMethodInfo(AsParameterized, source, dataContext),
+					MethodHelper.GetMethodInfo(AsQueryableParameterized, source, dataContext),
 					Expression.Constant(source),
 					SqlQueryRootExpression.Create(dataContext)
 				));
@@ -1125,11 +1122,7 @@ namespace LinqToDB
 
 		/// <summary>
 		/// Converts a generic <see cref="IEnumerable{T}" /> to a Linq To DB query where only the
-		/// specified fields are emitted as SQL parameters. Other fields remain as inline literals. UwU ✨
-		/// <para>
-		/// Use this overload when you want fine-grained control over which properties are parameterized —
-		/// for example, to parameterize only frequently-changing fields while keeping stable fields as literals.
-		/// </para>
+		/// specified fields are emitted as SQL parameters. Other fields remain as inline literals.
 		/// <example>
 		/// <code>
 		/// var items = new[] { new Item { Id = 1, Name = "A" }, new Item { Id = 2, Name = "B" } };
@@ -1148,8 +1141,9 @@ namespace LinqToDB
 		/// </param>
 		/// <returns>An <see cref="IQueryable{T}" /> with selectively parameterized values.</returns>
 		/// <exception cref="ArgumentNullException">
-		/// <paramref name="source" />, <paramref name="dataContext" />, or <paramref name="fieldsSelector" /> is <see langword="null" />.</exception>
-		public static IQueryable<TElement> AsParameterized<TElement>(
+		/// <paramref name="source" />, <paramref name="dataContext" />, or <paramref name="fieldsSelector" /> is <see langword="null" />.
+		/// </exception>
+		public static IQueryable<TElement> AsQueryableParameterized<TElement>(
 			this IEnumerable<TElement> source,
 			IDataContext dataContext,
 			Expression<Func<TElement, object>> fieldsSelector)
@@ -1161,7 +1155,7 @@ namespace LinqToDB
 			var query = new ExpressionQueryImpl<TElement>(dataContext,
 				Expression.Call(
 					null,
-					MethodHelper.GetMethodInfo(AsParameterized, source, dataContext, fieldsSelector),
+					MethodHelper.GetMethodInfo(AsQueryableParameterized, source, dataContext, fieldsSelector),
 					Expression.Constant(source),
 					SqlQueryRootExpression.Create(dataContext),
 					Expression.Quote(fieldsSelector)
