@@ -74,12 +74,11 @@ namespace LinqToDB.Internal.Linq.Builder
 		{
 			var result = new HashSet<string>(StringComparer.Ordinal);
 
-			// Unwrap Convert (boxing to object) if present
 			body = body.UnwrapConvert();
 
 			switch (body)
 			{
-				// x => new { x.Prop1, x.Prop2 }
+				
 				case NewExpression newExpr:
 				{
 					if (newExpr.Arguments.Count == 0)
@@ -97,14 +96,12 @@ namespace LinqToDB.Internal.Linq.Builder
 					break;
 				}
 
-				// x => x.Prop1 (single member)
 				case MemberExpression member:
 				{
 					result.Add(member.Member.Name);
 					break;
 				}
 
-				// x => new SomeType { Prop1 = x.Prop1, Prop2 = x.Prop2 }
 				case MemberInitExpression memberInit:
 				{
 					foreach (var binding in memberInit.Bindings)

@@ -23,10 +23,9 @@ namespace Tests.Linq
 
 		#region AsQueryableParameterized — All Fields
 
-		[Test(Description = "AsQueryableParameterized with all fields should produce SQL parameters in VALUES clause uwu~")]
+		[Test(Description = "AsQueryableParameterized with all fields should produce SQL parameters in VALUES clause")]
 		public void AllFields_Contains([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
 		{
-			// 🌸 Arrange: create a small in-memory collection and use AsQueryableParameterized
 			var items = new[]
 			{
 				new ParameterizedItem { Id = 1, Value = 10, Name = "Alpha" },
@@ -123,7 +122,6 @@ namespace Tests.Linq
 				new() { Id = 3, Value = 30, Name = "Gamma" },
 			]);
 
-			// 🎀 Only parameterize the "Id" field
 			var query =
 				from t in table
 				where items.AsQueryableParameterized(db, x => new { x.Id }).Select(x => x.Id).Contains(t.Id)
