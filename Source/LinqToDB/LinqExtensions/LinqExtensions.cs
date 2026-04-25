@@ -1130,7 +1130,7 @@ namespace LinqToDB
 		/// <example>
 		/// <code>
 		/// var items = new[] { new { Id = 1, Name = "A" }, new { Id = 2, Name = "B" } };
-		/// var query = items.AsParameterized(db)
+		/// var query = items.AsQueryableParameterized(db)
 		///     .Where(x => db.Table.Select(t => t.Id).Contains(x.Id));
 		/// // Generated SQL uses @p1, @p2, ... instead of inline 1, 2, 'A', 'B'
 		/// </code>
@@ -1171,7 +1171,7 @@ namespace LinqToDB
 		/// <code>
 		/// var items = new[] { new Item { Id = 1, Name = "A" }, new Item { Id = 2, Name = "B" } };
 		/// // Only the "Id" column values will become SQL parameters:
-		/// var query = items.AsParameterized(db, x => new { x.Id })
+		/// var query = items.AsQueryableParameterized(db, x => new { x.Id })
 		///     .Where(x => db.Table.Select(t => t.Id).Contains(x.Id));
 		/// </code>
 		/// </example>
@@ -1182,6 +1182,8 @@ namespace LinqToDB
 		/// <param name="fieldsSelector">
 		/// A lambda selecting which properties of <typeparamref name="TElement"/> should be parameterized.
 		/// Return an anonymous object with the desired properties: <c>x => new { x.Prop1, x.Prop2 }</c>.
+		/// When <paramref name="source"/> is already <see cref="IQueryable{T}"/>, selector configuration is ignored
+		/// and source query is returned as-is.
 		/// </param>
 		/// <returns>An <see cref="IQueryable{T}" /> with selectively parameterized values.</returns>
 		/// <exception cref="ArgumentNullException">
@@ -1195,6 +1197,9 @@ namespace LinqToDB
 			ArgumentNullException.ThrowIfNull(source);
 			ArgumentNullException.ThrowIfNull(dataContext);
 			ArgumentNullException.ThrowIfNull(fieldsSelector);
+
+			if (source is IQueryable<TElement> already)
+				return (IQueryable<TElement>)(ProcessSourceQueryable?.Invoke(already) ?? already);
 
 			var query = new ExpressionQueryImpl<TElement>(dataContext,
 				Expression.Call(

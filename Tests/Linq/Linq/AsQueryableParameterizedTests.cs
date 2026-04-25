@@ -163,6 +163,29 @@ namespace Tests.Linq
 
 		#endregion
 
+		#region AsQueryableParameterized — IQueryable Source
+
+		[Test(Description = "AsQueryableParameterized selective overload should reuse IQueryable source path")]
+		public void SelectiveFields_IQueryableSource([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var table = db.CreateLocalTable<ParameterizedItem>(
+			[
+				new() { Id = 1, Value = 10, Name = "Alpha" },
+				new() { Id = 2, Value = 20, Name = "Beta"  },
+				new() { Id = 3, Value = 30, Name = "Gamma" },
+			]);
+
+			IQueryable<ParameterizedItem> source = table.Where(t => t.Id <= 2);
+
+			var query = source.AsQueryableParameterized(db, x => new { x.Id });
+			var result = query.Select(x => x.Id).ToList();
+
+			result.ShouldBe(new[] { 1, 2 }, ignoreOrder: true);
+		}
+
+		#endregion
+
 		#region AsQueryableParameterized — Scalar Collection
 
 		[Test(Description = "AsQueryableParameterized with a scalar int collection — all values become parameters")]
