@@ -1313,7 +1313,10 @@ namespace LinqToDB.Internal.SqlQuery.Visitors
 					{
 						var newFields = CopyFields(element.Fields);
 
-						var sqlValuesTable = new SqlValuesTable(source, element.ValueBuilders, newFields, rows);
+						var sqlValuesTable = new SqlValuesTable(source, element.ValueBuilders, newFields, rows)
+						{
+							ParameterizedFieldNames = element.ParameterizedFieldNames,
+						};
 
 						return NotifyReplaced(sqlValuesTable, element);
 					}
